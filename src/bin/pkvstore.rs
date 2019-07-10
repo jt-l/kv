@@ -4,7 +4,9 @@ use clap::{App, Arg, SubCommand};
 
 use std::process;
 
-use pkvstore::{Result};
+use pkvstore::{Result, PkvStore};
+
+use tempfile::TempDir;
 
 fn main() -> Result<()> {
 
@@ -50,6 +52,24 @@ fn main() -> Result<()> {
         )
         .get_matches();
 
-    Ok(())
+    let temp_dir = TempDir::new().expect("unable to create temporary working directory");
+    let mut store = PkvStore::open(temp_dir.path())?;
 
+    match matches.subcommand() {
+        ("set", Some(_matches)) => {
+            store.set("test".to_string(), "value".to_string());
+        }
+
+        ("get", Some(_matches)) => {
+            unimplemented!();
+        }
+
+        ("rm", Some(_matches)) => {
+            unimplemented!();
+        }             
+
+        _ => unreachable!(),
+    }
+
+    Ok(())
 }
