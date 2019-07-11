@@ -57,7 +57,11 @@ fn main() -> Result<()> {
 
     match matches.subcommand() {
         ("set", Some(_matches)) => {
-            store.set("test".to_string(), "value".to_string());
+            if let Some(key) = _matches.value_of("key") {
+                if let Some(value) = _matches.value_of("value") {
+                    store.set(key.to_string(), value.to_string());
+                }
+            }
         }
 
         ("get", Some(_matches)) => {

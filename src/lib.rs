@@ -4,13 +4,18 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
+use std::io::BufWriter;
+use std::fs::OpenOptions;
 use std::io;
 
 use failure::Error;
+
 use serde::{Serialize, Deserialize};
+use serde_json;
 
 
 #[derive(Serialize, Deserialize)]
+#[derive(Debug)]
 // The command will be serialized before being written to the log, and deseralized upon being read
 enum Command {
     Set(String, String),
@@ -20,8 +25,8 @@ pub struct PkvStore {
     // map contains a mapping from key to a pointer to the command in the log
     map: HashMap<String, String>,    
 
-    // reference to the log
-    log: BufReader<File>, 
+    // log file
+    file: File,
 }
 
 pub type Result<T> = result::Result<T, Error>;
@@ -37,11 +42,16 @@ impl PkvStore {
     pub fn open(path: &Path) -> Result<PkvStore> {
 
         // open the log, if it does not exist create it
-        let f = File::open("log.txt")?;
+        let f = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .append(true)
+            .create(true)
+            .open("log.txt")?;
 
         Ok(PkvStore {
             map: HashMap::new(),
-            log: BufReader::new(f),
+            file: f,
         })
     }
 
@@ -50,7 +60,22 @@ impl PkvStore {
      * 2. Store the key and pointer to command in map
      */
     pub fn set(&mut self, key: String, value: String) -> Result<()> {
-        unimplemented!();
+
+        // create command
+        let command = Command::Set(key, value);
+
+        // serialize to a json string
+        let serialized_command = serde_json::to_string(&command).unwrap() + "\n";
+
+        // write the serialized command to the log
+        self.file.write_all(&serialized_command.into_bytes())?;
+
+        //Write the key and value to the hash map
+        if let Command::Set(key, value) = command {
+            self.map.insert(key, value);
+        }
+
+        Ok(())
     }
 
     // Get the string value of a given string key
