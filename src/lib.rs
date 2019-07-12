@@ -7,6 +7,7 @@ use std::io::BufReader;
 use std::io::BufWriter;
 use std::fs::OpenOptions;
 use std::io;
+use std::process;
 
 use failure::Error;
 
@@ -18,7 +19,9 @@ use serde_json;
 #[derive(Debug)]
 // The command will be serialized before being written to the log, and deseralized upon being read
 enum Command {
+    Get(String),
     Set(String, String),
+    Remove(String),
 }
 
 pub struct PkvStore {
@@ -49,8 +52,11 @@ impl PkvStore {
             .create(true)
             .open("log.txt")?;
 
+        // load the db to memory 
+        let map = load_db(&f)?;
+
         Ok(PkvStore {
-            map: HashMap::new(),
+            map: map,
             file: f,
         })
     }
@@ -60,6 +66,11 @@ impl PkvStore {
      * 2. Store the key and pointer to command in map
      */
     pub fn set(&mut self, key: String, value: String) -> Result<()> {
+        // check if the key already exists in memory
+        if let Some(key) = self.map.get(&key) {
+            eprintln!("Failed to set provided key: Key already exists!");
+            process::exit(1);
+        };
 
         // create command
         let command = Command::Set(key, value);
@@ -70,7 +81,7 @@ impl PkvStore {
         // write the serialized command to the log
         self.file.write_all(&serialized_command.into_bytes())?;
 
-        //Write the key and value to the hash map
+        // write the key and value to the hash map
         if let Command::Set(key, value) = command {
             self.map.insert(key, value);
         }
@@ -87,4 +98,30 @@ impl PkvStore {
     pub fn remove(&mut self, key: String) -> Result<()> {
         unimplemented!();
     }
+
 }
+
+// load the db from the log into memory
+fn load_db(f: &File) -> Result<(HashMap<String, String>)> {
+
+    // create buf reader
+    let reader = BufReader::new(f);
+
+    // create hash map
+    let mut map = HashMap::new();
+
+    for line in reader.lines() {
+        // deseralize, line returns a Result so need to specify the type of deseralized_command
+        let deserialized_command: Command = serde_json::from_str(&line?)?;
+
+        // execute the command on the map
+        match deserialized_command {
+            Command::Set(key, value) => map.insert(key, value),
+            Command::Remove(key) => map.remove(&key),
+            _ => None,
+        };
+    }
+
+    Ok(map)
+}
+
