@@ -69,7 +69,9 @@ fn main() -> Result<()> {
         }
 
         ("rm", Some(_matches)) => {
-            unimplemented!();
+            if let Some(key) = _matches.value_of("key") {
+                store.remove(key.to_string());
+            }
         }             
 
         _ => unreachable!(),

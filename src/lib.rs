@@ -66,11 +66,6 @@ impl PkvStore {
      * 2. Store the key and pointer to command in map
      */
     pub fn set(&mut self, key: String, value: String) -> Result<()> {
-        // check if the key already exists in memory
-        if let Some(key) = self.map.get(&key) {
-            eprintln!("Failed to set provided key: Key already exists!");
-            process::exit(1);
-        };
 
         // create command
         let command = Command::Set(key, value);
@@ -96,9 +91,31 @@ impl PkvStore {
 
     // Remove a given key
     pub fn remove(&mut self, key: String) -> Result<()> {
-        unimplemented!();
-    }
 
+        // check that the key exists
+        if let Some(key) = self.map.get(&key) {
+            
+            // create command
+            let command = Command::Remove(key.to_string());
+
+            // serialize command
+            let serialized_command = serde_json::to_string(&command).unwrap() + "\n";
+
+            // write serialized command to log
+            self.file.write_all(&serialized_command.into_bytes())?;
+
+            // remove command from map
+            if let Command::Remove(key) = command {
+                self.map.remove(&key);
+            }
+
+            Ok(())
+
+        } else {
+            eprintln!("Key not found");               
+            process::exit(1);
+        }
+    }
 }
 
 // load the db from the log into memory
