@@ -65,7 +65,9 @@ fn main() -> Result<()> {
         }
 
         ("get", Some(_matches)) => {
-            unimplemented!();
+            if let Some(key) = _matches.value_of("key") {
+                store.get(key.to_string());
+            }
         }
 
         ("rm", Some(_matches)) => {

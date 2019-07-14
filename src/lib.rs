@@ -86,7 +86,14 @@ impl PkvStore {
 
     // Get the string value of a given string key
     pub fn get(&mut self, key: String) -> Result<Option<String>> {
-        unimplemented!();
+        let value = self.map.get(&key);
+
+        if let Some(value) = value {
+            Ok(Some(value.to_string()))
+        } else {
+            println!("Key not found");
+            Ok(None)
+        }
     }
 
     // Remove a given key
