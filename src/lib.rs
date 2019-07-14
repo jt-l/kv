@@ -112,7 +112,7 @@ impl PkvStore {
             Ok(())
 
         } else {
-            eprintln!("Key not found");               
+            println!("Key not found");               
             process::exit(1);
         }
     }
