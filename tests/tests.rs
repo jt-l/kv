@@ -62,62 +62,6 @@ fn cli_set() {
 }
 
 #[test]
-fn cli_get_stored() -> Result<()> {
-    let temp_dir = TempDir::new().expect("unable to create temporary working directory");
-
-    let mut store = PkvStore::open(temp_dir.path())?;
-    store.set("key1".to_owned(), "value1".to_owned())?;
-    store.set("key2".to_owned(), "value2".to_owned())?;
-    drop(store);
-
-    Command::cargo_bin("pkvstore")
-        .unwrap()
-        .args(&["get", "key1"])
-        .current_dir(&temp_dir)
-        .assert()
-        .success()
-        .stdout(eq("value1").trim());
-
-    Command::cargo_bin("pkvstore")
-        .unwrap()
-        .args(&["get", "key2"])
-        .current_dir(&temp_dir)
-        .assert()
-        .success()
-        .stdout(eq("value2").trim());
-
-    Ok(())
-}
-
-// `pkvstore rm <KEY>` should print nothing and exit with zero.
-#[test]
-fn cli_rm_stored() -> Result<()> {
-    let temp_dir = TempDir::new().expect("unable to create temporary working directory");
-
-    let mut store = PkvStore::open(temp_dir.path())?;
-    store.set("key1".to_owned(), "value1".to_owned())?;
-    drop(store);
-
-    Command::cargo_bin("pkvstore")
-        .unwrap()
-        .args(&["rm", "key1"])
-        .current_dir(&temp_dir)
-        .assert()
-        .success()
-        .stdout(is_empty());
-
-    Command::cargo_bin("pkvstore")
-        .unwrap()
-        .args(&["get", "key1"])
-        .current_dir(&temp_dir)
-        .assert()
-        .success()
-        .stdout(eq("Key not found").trim());
-
-    Ok(())
-}
-
-#[test]
 fn cli_invalid_get() {
     Command::cargo_bin("pkvstore")
         .unwrap()
@@ -195,6 +139,8 @@ fn get_stored_value() -> Result<()> {
     assert_eq!(store.get("key1".to_owned())?, Some("value1".to_owned()));
     assert_eq!(store.get("key2".to_owned())?, Some("value2".to_owned()));
 
+    temp_dir.close();
+
     Ok(())
 }
 
@@ -215,6 +161,8 @@ fn overwrite_value() -> Result<()> {
     assert_eq!(store.get("key1".to_owned())?, Some("value2".to_owned()));
     store.set("key1".to_owned(), "value3".to_owned())?;
     assert_eq!(store.get("key1".to_owned())?, Some("value3".to_owned()));
+
+    temp_dir.close();
 
     Ok(())
 }
@@ -241,6 +189,9 @@ fn remove_non_existent_key() -> Result<()> {
     let temp_dir = TempDir::new().expect("unable to create temporary working directory");
     let mut store = PkvStore::open(temp_dir.path())?;
     assert!(store.remove("key1".to_owned()).is_err());
+
+    temp_dir.close();
+
     Ok(())
 }
 
@@ -251,6 +202,7 @@ fn remove_key() -> Result<()> {
     store.set("key1".to_owned(), "value1".to_owned())?;
     assert!(store.remove("key1".to_owned()).is_ok());
     assert_eq!(store.get("key1".to_owned())?, None);
+    temp_dir.close();
     Ok(())
 }
 
@@ -294,8 +246,8 @@ fn compaction() -> Result<()> {
             let key = format!("key{}", key_id);
             assert_eq!(store.get(key)?, Some(format!("{}", iter)));
         }
+        temp_dir.close();
         return Ok(());
     }
-
     panic!("No compaction detected");
 }

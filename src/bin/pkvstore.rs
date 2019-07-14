@@ -3,10 +3,11 @@ extern crate clap;
 use clap::{App, Arg, SubCommand};
 
 use std::process;
+use std::env::current_dir;
 
 use pkvstore::{Result, PkvStore};
 
-use tempfile::TempDir;
+//use tempfile::TempDir;
 
 fn main() -> Result<()> {
 
@@ -52,13 +53,11 @@ fn main() -> Result<()> {
         )
         .get_matches();
 
-    let temp_dir = TempDir::new().expect("unable to create temporary working directory");
-    let mut store = PkvStore::open(temp_dir.path())?;
-
     match matches.subcommand() {
         ("set", Some(_matches)) => {
             if let Some(key) = _matches.value_of("key") {
                 if let Some(value) = _matches.value_of("value") {
+                    let mut store = PkvStore::open(current_dir()?)?;
                     store.set(key.to_string(), value.to_string());
                 }
             }
@@ -66,12 +65,14 @@ fn main() -> Result<()> {
 
         ("get", Some(_matches)) => {
             if let Some(key) = _matches.value_of("key") {
+                let mut store = PkvStore::open(current_dir()?)?;
                 store.get(key.to_string());
             }
         }
 
         ("rm", Some(_matches)) => {
             if let Some(key) = _matches.value_of("key") {
+                let mut store = PkvStore::open(current_dir()?)?;
                 store.remove(key.to_string());
             }
         }             

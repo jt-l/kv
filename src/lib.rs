@@ -1,11 +1,10 @@
 use std::result;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::collections::HashMap;
-use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::io::BufWriter;
-use std::fs::OpenOptions;
+use std::fs::{self, File, OpenOptions};
 use std::io;
 use std::process;
 
@@ -42,7 +41,10 @@ impl PkvStore {
      * 2. A file handler to the log is opened
      * 3. The PkvStore struct is returned
     */
-    pub fn open(path: &Path) -> Result<PkvStore> {
+    pub fn open(path: impl Into<PathBuf>) -> Result<PkvStore> {
+
+        let path = path.into();
+        fs::create_dir_all(&path)?;
 
         // open the log, if it does not exist create it
         let f = OpenOptions::new()
@@ -86,9 +88,11 @@ impl PkvStore {
 
     // Get the string value of a given string key
     pub fn get(&mut self, key: String) -> Result<Option<String>> {
-        let value = self.map.get(&key);
 
-        if let Some(value) = value {
+        let val = self.map.get(&key);
+
+        if let Some(value) = val {
+            println!("{}", value);
             Ok(Some(value.to_string()))
         } else {
             println!("Key not found");
@@ -100,7 +104,7 @@ impl PkvStore {
     pub fn remove(&mut self, key: String) -> Result<()> {
 
         // check that the key exists
-        if let Some(key) = self.map.get(&key) {
+        if let Some(val) = self.map.get(&key) {
             
             // create command
             let command = Command::Remove(key.to_string());
@@ -142,6 +146,7 @@ fn load_db(f: &File) -> Result<(HashMap<String, String>)> {
         match deserialized_command {
             Command::Set(key, value) => map.insert(key, value),
             Command::Remove(key) => map.remove(&key),
+            Command::Get(key) => map.get(&key).map(|val| val.to_string()),
             _ => None,
         };
     }
