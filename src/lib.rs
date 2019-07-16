@@ -66,6 +66,10 @@ impl PkvStore {
      */
     pub fn set(&mut self, key: String, value: String) -> Result<()> {
 
+        let num_lines = get_lines(&self.file);
+
+        println!("lines: {:?}", num_lines);
+
         // create command
         let command = Command::Set(key, value);
 
@@ -148,5 +152,10 @@ fn load_db(f: &File) -> Result<(HashMap<String, String>)> {
     }
 
     Ok(map)
+}
+
+fn get_lines(f: &File) -> Result<usize> {
+    let reader = BufReader::new(f);
+    Ok(reader.lines().count())
 }
 
