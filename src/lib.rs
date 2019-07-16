@@ -1,6 +1,6 @@
 use std::result;
-use std::path::{Path, PathBuf};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::io::BufWriter;
@@ -42,9 +42,6 @@ impl PkvStore {
      * 3. The PkvStore struct is returned
     */
     pub fn open(path: impl Into<PathBuf>) -> Result<PkvStore> {
-
-        let path = path.into();
-        fs::create_dir_all(&path)?;
 
         // open the log, if it does not exist create it
         let f = OpenOptions::new()
@@ -146,7 +143,6 @@ fn load_db(f: &File) -> Result<(HashMap<String, String>)> {
         match deserialized_command {
             Command::Set(key, value) => map.insert(key, value),
             Command::Remove(key) => map.remove(&key),
-            Command::Get(key) => map.get(&key).map(|val| val.to_string()),
             _ => None,
         };
     }
